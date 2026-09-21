@@ -809,12 +809,13 @@ function briarNature(b){
  for(let i=0;i<18;i++){const x=-48+i*.53,z=36+Math.sin(i*.14);if(briarRailNear(x,z).distance<2)continue;const y=briarSurface(x,z);b.box(x,y+.23,z,.50,.43,.56,i%3?'#909b84':'#b0b195',4);if(i<7)b.box(x,y+.59,z,.48,.27,.52,'#9aa38c',4);}
 }
 function briarwatchRoom(scene,b){
- briarTable(b);briarTerrain(b);briarRailway(b);briarRoads(b);briarCastle(b);briarVillage(scene,b);briarNature(b);
+ briarTable(b);briarTerrain(b);briarRailway(b);briarRoads(b);briarCastle(b);briarVillage(scene,b);briarNature(b);briarCreateDragon(scene);
  scene.routes=[BRIAR_ROUTE];scene.trains=[{edge:BRIAR_ROUTE,distance:125,speed:.90,type:'steam',stock:'coast',finish:'briarwatch',cars:3}];
  scene.height=(x,z)=>briarInside(x,z)?Math.max(BRIAR.water,briarSurface(x,z)):FLOOR;scene.canPlace=()=>false;
  scene.briarwatch={revision:4,heroTrees:BRIAR_HERO_TREES.length,castle:'Briarwatch',railway:'The Crown & Cinder Line',layout:'Walk-in horseshoe with two scenic peninsulas',villageBuildings:BRIAR_BUILDINGS.length,trees:BRIAR_TREES.length,watchRuin:true,spring:true};
  scene.spots=[
   {name:'The walk-in castle gallery',target:[-1,8,-8],distance:160,phoneDistance:400,phoneYaw:1.48,phonePitch:.84,pitch:.64,yaw:.18,detail:'Two shaped scenic peninsulas wrap around a real visitor aisle. A high stone viaduct, low timber bridge and castle railway connect the little worlds.'},
+  {name:'The dragon’s perch',target:[-38,40,-3],distance:37,phoneDistance:66,pitch:.28,yaw:.8,detail:'The weathered dragon rests on the keep, draws a deep breath and sends fire over the courtyard about every two minutes.'},
   {name:'The old keep',target:[-38,27,-9],distance:47,phoneDistance:84,pitch:.37,yaw:-.55,detail:'Crow-stepped limestone gables, traceried loft roses, chamfered archivolts, corbelled bartizans and an oak hoarding articulate the old keep.'},
   {name:'The gate and barbican',target:[-34,15,15],distance:35,phoneDistance:67,pitch:.35,yaw:.12,detail:'Swallowtail standards, carved keystones and mossy stonework frame a braced drawbridge and a genuinely open gate passage.'},
   {name:'The sheltered courtyard',target:[-33,15,3],distance:41,phoneDistance:74,pitch:1.05,yaw:-.2,detail:'Arcades, timber stairs, an open well, kitchen gardens and a narrow working court connect the hall to the keep.'},

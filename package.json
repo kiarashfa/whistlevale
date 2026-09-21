@@ -22,7 +22,7 @@
     "test:rooms": "node scripts/rooms-qa.mjs",
     "test:map": "node scripts/shop-map-qa.mjs",
     "test:cinema": "node scripts/cinema-qa.mjs",
-    "test:trains": "node scripts/train-cabinet-qa.mjs",
+    "test:trains": "node scripts/train-cabinet-qa.mjs && node scripts/steam-qa.mjs",
     "test:hudson": "node scripts/hudson-qa.mjs",
     "contribute": "node scripts/contribute.mjs",
     "check:contributions": "node scripts/community-check.mjs",
@@ -34,7 +34,7 @@
     "test:hall": "node scripts/grandhall-qa.mjs && node scripts/hall-scene-qa.mjs && node scripts/hall-glass-qa.mjs && node scripts/hall-residency-qa.mjs && node scripts/hall-navigation-qa.mjs && node scripts/meridian-observatory-qa.mjs && node scripts/meridian-celestial-qa.mjs && node scripts/night-post-qa.mjs && node scripts/codex-reset-qa.mjs",
     "test:queens": "node scripts/queens-scores-qa.mjs && node scripts/queens-qa.mjs",
     "test:safari": "node scripts/safari-qa.mjs && node scripts/safari-passenger-qa.mjs && node scripts/safari-giraffe-qa.mjs && node scripts/safari-behavior-qa.mjs && node scripts/safari-companions-qa.mjs",
-    "test:briarwatch": "node scripts/briarwatch-qa.mjs"
+    "test:briarwatch": "node scripts/briarwatch-qa.mjs && node scripts/briarwatch-dragon-qa.mjs"
   },
   "license": "MIT",
   "engines": {

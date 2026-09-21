@@ -2,12 +2,13 @@
 
 A native Whistlevale railway room, created by **nickfromlater** with agent assistance.
 Approved scope: [proposal #42](https://github.com/nickfromlater/whistlevale/issues/42).
-No dragon, placeholder creature, flight system or associated controls are included.
+The original room proposal excluded creatures; the subsequent maintainer brief adds
+a permanently perched, fire-breathing dragon.
 
 ## Visit
 
 Serve with `npm run dev`, then open `http://127.0.0.1:4174/?room=briarwatch`.
-The room is also available from the house map at `west-5`. Views offers eleven
+The room is also available from the house map at `west-5`. Views offers twelve
 composed camera positions, including authored portrait distances. The usual train,
 cinema, lighting, sound and pause controls remain available.
 
@@ -227,3 +228,35 @@ export inclusion does not substitute for manually opening a fresh playable
 export. Earlier spring/sconce close-ups were occluded; use the composed room
 views for their visible context rather than treating those shots as evidence
 of every detail.
+
+## The castle dragon
+
+An original weathered olive-gray dragon with umber wing membranes lives on the
+keep. It stays seated with folded wings, planted feet, slow breathing and small
+head and tail movements. A 20-second performance adds a deliberate intake, braced
+fire breath and gradual recovery every 120 seconds. The first performance starts
+after 20 seconds of quiet watch. **Views → The dragon’s perch** frames the creature
+and fire. There is no flight or takeoff behavior.
+
+The [editable Blender source](../../models/briarwatch-dragon/README.md) includes
+a unified anatomical skin, independently folding wing fingers, a retained weight
+cage and two shipped actions, with older studies retained only in the source.
+The 28-bone rig uses two draw palettes within the existing 24-bone renderer limit. One scene-owned simulation pose feeds room and map color/shadow
+passes. Pause stops the sequence; reduced motion holds the perch without fire.
+Room replacement and failed builds release the skin and its texture. The existing
+static scenery ceilings remain unchanged.
+
+The fire uses a dedicated instanced shader for turbulent flame, smoke and embers,
+with native depth testing and no depth writes or solid shadows. A room-scoped
+line light follows the jet and illuminates the muzzle and nearby stone. The map
+applies the room transform to both effect and illumination. The effect has no
+building damage, fluid simulation or bundled audio recording.
+
+`src/rooms/briarwatch-dragon.js` owns the two-minute cycle, pose sampling, fire
+and rendering hooks. The model ships in normal builds and
+portable exports. `scripts/briarwatch-dragon-qa.mjs` checks actual weighted soles
+against the translated keep triangles throughout resting and fire motions; real
+membrane vertices against their supporting fingers; all skin vertices against
+room, roof and turret bounds at half-second intervals; the fire cadence and action
+seams; and finite poses with a stationary root at 60 Hz. These sampled checks do not establish all possible
+self-intersections, physical-phone performance or artistic acceptance.

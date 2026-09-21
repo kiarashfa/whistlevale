@@ -1,0 +1,32 @@
+{
+  "publicCredit": "nickfromlater",
+  "assistance": "Codex",
+  "pipeline": [
+    "Generated anatomical reference",
+    "TencentARC Pixal3D image-to-3D",
+    "Blender surface cleanup, articulated jaw, roof fitting, weighted armature and seated animation",
+    "Protected broad-surface simplification",
+    "Native skinned-mesh export"
+  ],
+  "referenceSHA256": "081dc4289ed1faf4ebd1eaf0c80f071b870946d01e8f229e64ce02a787eafc45",
+  "model": "https://huggingface.co/TencentARC/Pixal3D",
+  "modelRevision": "b0cb2e1b794cab9aa0ac38a95d794a4d9337437f",
+  "space": "https://huggingface.co/spaces/TencentARC/Pixal3D",
+  "spaceRevision": "40a1519aadf70a82110a500997c19b626668a144",
+  "modelCardLicense": "MIT",
+  "generationResolution": 1536,
+  "generatedGLBSHA256": "a52057c51136644715eec386e9068917ba61fc62644423387e2c34b75ebc60ef",
+  "latentSHA256": "95e2313f82a90e2e4f59c58619569a118fc15890782b1b3fba7d2583d68ca8d5",
+  "extraction": "Official pinned Pixal3D decoder and export; official CUDA extensions compiled for A100 sm_80 after a Space extraction timeout. No replacement surface generator.",
+  "blender": "5.1.1",
+  "deformBones": 38,
+  "animatorControls": 9,
+  "plantConstraints": 4,
+  "simplification": {
+    "beforeFaces": 18335,
+    "afterFaces": 13452,
+    "protectedVertices": 1605,
+    "protectedMaxError": 0.0
+  },
+  "notes": "The packed Blender source contains geometry, coat, weights and actions. Routine export uses this source; it does not contact a generation provider."
+}

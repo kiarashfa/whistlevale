@@ -6,22 +6,31 @@
 function safariSkinDecode(text,Type){
  const raw=atob(text),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Type(bytes.buffer);
 }
-function safariSkinMesh(source){
- const input=safariSkinDecode(source.vertexData,Float32Array),indices=safariSkinDecode(source.indexData,Uint32Array);
+function safariSkinMesh(source,material=90,coatOwner=null){
+ const input=typeof source.vertexData==='string'?safariSkinDecode(source.vertexData,Float32Array):source.vertexData,indices=typeof source.indexData==='string'?safariSkinDecode(source.indexData,Uint32Array):source.indexData;
  const data=new Float32Array(source.vertices*12),skin=new Float32Array(source.vertices*8);
  for(let i=0;i<source.vertices;i++){
-  data.set(input.subarray(i*19,i*19+6),i*12);data.set([input[i*19+16],input[i*19+17],input[i*19+18],90,input[i*19+6],input[i*19+7]],i*12+6);
+  data.set(input.subarray(i*19,i*19+6),i*12);data.set([input[i*19+16],input[i*19+17],input[i*19+18],material,input[i*19+6],input[i*19+7]],i*12+6);
   skin.set(input.subarray(i*19+8,i*19+16),i*8);
  }
  const mesh={indexed:true,count:indices.length,bytes:data.byteLength+skin.byteLength+indices.byteLength};
  const previousVAO=gl.getParameter(gl.VERTEX_ARRAY_BINDING),previousBuffer=gl.getParameter(gl.ARRAY_BUFFER_BINDING);
  try{
-  for(const [name,create]of[['vao','createVertexArray'],['buf','createBuffer'],['ibo','createBuffer'],['skinBuffer','createBuffer'],['skinTexture','createTexture']]){mesh[name]=gl[create]();if(!mesh[name])throw new Error('Unable to allocate wildlife '+name+'.');}
+  const allocations=[['vao','createVertexArray'],['buf','createBuffer'],['ibo','createBuffer'],['skinBuffer','createBuffer']];
+  if(!coatOwner)allocations.push(['skinTexture','createTexture']);
+  for(const [name,create]of allocations){mesh[name]=gl[create]();if(!mesh[name])throw new Error('Unable to allocate wildlife '+name+'.');}
   gl.bindVertexArray(mesh.vao);gl.bindBuffer(gl.ARRAY_BUFFER,mesh.buf);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);
   [3,3,3,1,2].forEach((n,i)=>{gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,n,gl.FLOAT,false,48,[0,12,24,36,40][i]);});
   gl.bindBuffer(gl.ARRAY_BUFFER,mesh.skinBuffer);gl.bufferData(gl.ARRAY_BUFFER,skin,gl.STATIC_DRAW);
   for(let i=0;i<2;i++){gl.enableVertexAttribArray(5+i);gl.vertexAttribPointer(5+i,4,gl.FLOAT,false,32,i*16);}
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,mesh.ibo);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);
+  if(coatOwner){
+   if(coatOwner.disposed||!coatOwner.skinTexture)throw new Error('The shared skin coat is unavailable.');
+   mesh.skinTexture=coatOwner.skinTexture;mesh.skinTextureShared=true;
+   Object.defineProperty(mesh,'textureReady',{get:()=>coatOwner.textureReady});
+   Object.defineProperty(mesh,'textureError',{get:()=>coatOwner.textureError});
+   return mesh;
+  }
   function withCoatTexture(callback){
    const active=gl.getParameter(gl.ACTIVE_TEXTURE),flip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL);
    gl.activeTexture(gl.TEXTURE6);const binding=gl.getParameter(gl.TEXTURE_BINDING_2D);

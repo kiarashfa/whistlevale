@@ -36,6 +36,7 @@ Materials are shader IDs, not texture files. Useful existing choices:
 | `80` | Local practical-light haze, using the same card coordinates as 79 |
 | `81` | Miniature world surfaces, native spherical UVs; opaque |
 | `82` | Intermittent meteor: UV 0–1 along a fixed track |
+| `101` | Briarwatch dragon only: weighted skin with bind-space scale detail; requires the 24-bone skin attributes |
 | `76` | Clear architectural glazing: transparent in both renderers, with no opaque shadow; use for greenhouse panes with visible interiors |
 
 Use material `76` only on complete triangles or quads. Thin single-surface panes

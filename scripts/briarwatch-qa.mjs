@@ -5,7 +5,7 @@ await loadContributionDefinitions(state,await loadCommunity());prepareCommunityG
 const report=state.run(`(()=>{
  const before=seed,s=getHouseScene('briarwatch');assert.equal(seed,before);assert.equal(getHouseScene('briarwatch'),s);
  assert.equal(s.trains.length,1);assert.equal(s.trains[0].type,'steam');assert.equal(s.routes.length,1);
- assert.equal(s.walls.length,4);assert.equal(s.spots.length,11);assert.equal(s.movingParts.length,1);
+ assert.equal(s.walls.length,4);assert.equal(s.spots.length,12);assert.equal(s.movingParts.length,1);
  assert.ok(s.mesh.count<900000,'fixed complete room vertex ceiling');assert.ok(s.movingParts[0].mesh.count<6000,'mechanism ceiling');
  assert.ok(s.spots.every(p=>p.phoneDistance>p.distance&&p.target.every(Number.isFinite)));
  assert.ok(validateCredits(HOUSE_ROOMS.briarwatch.credits).some(c=>c.handle==='nickfromlater'));
@@ -231,12 +231,12 @@ Object.assign(report,state.run(`(()=>{
  assert.deepEqual(part.model(s),m,'stationary train gives a stationary mill wheel');clock=savedClock;
  s.trains[0].distance+=1;assert.notDeepEqual(part.model(s),m,'wheel is a working native mechanism');assert.ok(part.model(s).every(Number.isFinite));
  const motion=reduceMotion;reduceMotion=true;const still=part.model(s);s.trains[0].distance+=1;assert.deepEqual(part.model(s),still,'reduced motion freezes mechanism');reduceMotion=motion;s.trains[0].distance=distance;
- const seen=[],oldDraw=draw,oldFormation=drawHouseTrainFormation;draw=(mesh)=>seen.push(mesh);drawHouseTrainFormation=()=>{};try{drawHouseTrains(s,{});}finally{draw=oldDraw;drawHouseTrainFormation=oldFormation;}
- assert.deepEqual(seen,[part.mesh],'mechanism shares native dynamic rendering');
+ const seen=[],oldDraw=draw,oldFormation=drawHouseTrainFormation;draw=(mesh)=>seen.push(mesh);drawHouseTrainFormation=()=>{};try{drawHouseTrains(s,{u:{}});}finally{draw=oldDraw;drawHouseTrainFormation=oldFormation;}
+ assert.deepEqual(seen,[part.mesh,...s.dragon.parts.map(p=>p.mesh)],'mechanism and dragon share native dynamic rendering');
  const a=new Builder(),b=new Builder();briarMillWheel(a);briarMillWheel(b);assert.deepEqual(a.data,b.data,'deterministic mechanism geometry');
  const disposed=[],oldDispose=disposeMesh;disposeMesh=mesh=>{if(mesh)disposed.push(mesh);};
  try{registerHouseRoom('briarwatch',{...HOUSE_ROOMS.briarwatch,build:briarwatchRoom,shell:briarShell});}finally{disposeMesh=oldDispose;}
- for(const mesh of[s.mesh,s.lifeDetails.mesh,part.mesh,...s.walls.map(w=>w.mesh)])assert.ok(disposed.includes(mesh),'all room-owned buffers are released on rebuild');
+ for(const mesh of[s.mesh,s.lifeDetails.mesh,part.mesh,...s.dragon.parts.map(p=>p.mesh),...s.walls.map(w=>w.mesh)])assert.ok(disposed.includes(mesh),'all room-owned buffers are released on rebuild');
  assert.ok(!roomScenes.has('briarwatch'));
  return {ownedMeshesReleased:disposed.length};
 })()`));
