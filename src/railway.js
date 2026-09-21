@@ -97,16 +97,23 @@ precision highp float;
 layout(location=0)in vec3 aPosition;layout(location=1)in vec3 aNormal;layout(location=2)in vec3 aColor;layout(location=3)in float aMat;layout(location=4)in vec2 aUV;
 ${WILDLIFE_SKIN_GLSL}
 uniform mat4 uModel,uVP,uLightVP;uniform float uTime;out vec3 vPos,vNormal,vColor;out float vMat;out vec2 vUV;out vec4 vShadow;
-void main(){mat4 skin=abs(aMat-90.)<.1?wildlifeSkin():mat4(1.);vec3 normal=mat3(skin)*aNormal;vec4 p=uModel*skin*vec4(aPosition,1.);if(abs(aMat-8.)<.1){p.x+=sin(uTime*.9+p.x*.71+p.z*.28)*.021; p.z+=sin(uTime*.67+p.z*.55)*.012;}if(abs(aMat-15.)<.1)p.xyz+=normalize(mat3(uModel)*aNormal)*.007;if(abs(aMat-32.)<.1)p.xyz+=normalize(mat3(uModel)*aNormal)*.035;vPos=p.xyz;vNormal=normalize(mat3(uModel)*normal);vColor=aColor;vMat=aMat;vUV=aUV;vShadow=uLightVP*p;gl_Position=uVP*p;}`;
+void main(){mat4 skin=(abs(aMat-90.)<.1||abs(aMat-101.)<.1)?wildlifeSkin():mat4(1.);vec3 normal=mat3(skin)*aNormal;vec4 p=uModel*skin*vec4(aPosition,1.);if(abs(aMat-8.)<.1){p.x+=sin(uTime*.9+p.x*.71+p.z*.28)*.021; p.z+=sin(uTime*.67+p.z*.55)*.012;}if(abs(aMat-15.)<.1)p.xyz+=normalize(mat3(uModel)*aNormal)*.007;if(abs(aMat-32.)<.1)p.xyz+=normalize(mat3(uModel)*aNormal)*.035;vPos=p.xyz;vNormal=normalize(mat3(uModel)*normal);vColor=aColor;vMat=aMat;vUV=aUV;vShadow=uLightVP*p;gl_Position=uVP*p;}`;
 const FS=`#version 300 es
 precision highp float;
 in vec3 vPos,vNormal,vColor;in float vMat;in vec2 vUV;in vec4 vShadow;
 uniform sampler2D uShadow,uAtlas,uRoomAtlas,uMoonlightFilm,uMoonlightNameplate,uWildlifeCoat;
 uniform float uMoonlightReady;
+uniform vec4 uDragonLight;uniform vec3 uDragonLightEnd;uniform float uDragonLightScale;
 uniform vec3 uEye,uSun,uHead,uForward,uLamps[8],uRoomLights[6];
 uniform float uNight,uTime,uRoomLevel,uRain,uPreview,uInvalid;out vec4 frag;
 float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+// Integrate a repeated seam over the pixel footprint. Point-sampled mortar
+// and slate courses otherwise turn into moving speckles in wide room views.
+float surfaceCourse(float value,float width){
+ float footprint=max(fwidth(value),.0001),a=value-footprint*.5,b=value+footprint*.5;
+ return clamp((floor(b)*width+min(fract(b),width)-floor(a)*width-min(fract(a),width))/footprint,0.,1.);
+}
 float shadow(vec3 n){
  vec3 p=vShadow.xyz/vShadow.w*.5+.5;if(p.x<0.||p.x>1.||p.y<0.||p.y>1.||p.z>1.)return 1.;
  float bias=max(.00024,.00064*(1.-dot(n,uSun))),s=0.;vec2 size=vec2(textureSize(uShadow,0)),texel=1./size;
@@ -266,14 +273,16 @@ void main(){float m=floor(vMat+.5);vec3 n=normalize(vNormal);if(!gl_FrontFacing)
   float edge=smoothstep(.63,1.,abs(vUV.x));
   base=mix(base,vec3(.77,.85,.73),(silk*.16+edge*.11)*smoothstep(.10,.5,flow));rough=.26;
  }
- if(m==4.){float row=floor(p.y*4.2);vec2 brick=vec2(fract((abs(n.z)>.7?p.x:p.z)*2.2+mod(row,2.)*.5),fract(p.y*4.2));float mortar=1.-smoothstep(.018,.048,min(brick.x,brick.y));base*=mix(.9+.1*noise(p*8.),.70,mortar*.65);rough=.92;}
- if(m==5.){float r=fract(p.y*8.);base*=.86+.14*smoothstep(.02,.13,r);rough=.74;}
+ if(m==4.){float row=floor(p.y*4.2),x=(abs(n.z)>.7?p.x:p.z)*2.2+mod(row,2.)*.5;float a=surfaceCourse(x,.033),b=surfaceCourse(p.y*4.2,.033),mortar=a+b-a*b;float grain=mix(noise(p*8.),.5,smoothstep(.3,1.2,length(fwidth(p*8.))));base*=mix(.9+.1*grain,.70,mortar*.65);rough=.92;}
+ if(m==5.){base*=1.-.14*surfaceCourse(p.y*8.,.075);rough=.74;}
  if(m==6.){base=mix(base,vec3(1.,.68,.34),dusk*.94);em=dusk*1.25;rough=.19;metal=.24;}
  if(m==8.){base*=.87+.23*noise(p*19.);rough=.95;}
  if(m==44.){float streak=sin(p.x*33.+p.y*5.+uTime*5.5)*.06+sin(p.z*42.-uTime*4.)*.04;base*=.89+streak;em=.12;rough=.22;}
  if(m==9.){base*=.77+.37*noise(p*26.);rough=.96;}
  if(m==10.){em=mix(.38,3.0,dusk);rough=.3;}
  if(m==90.){base=texture(uWildlifeCoat,vUV).rgb*vColor;rough=.88;}
+ // Dragon scales remain anchored to the bind surface while the rig moves.
+ if(m==101.){base=vColor;rough=.88;if(vUV.x> -99.)base*=texture(uWildlifeCoat,vUV).rgb;}
  if(m==15.){base=texture(uAtlas,vUV).rgb;rough=.79;}
  if(m==85.){base=texture(uMoonlightNameplate,vUV).rgb;rough=.65;em=.06+.15*uNight;}
  if(m==20.||(m>=94.&&m<=96.)){base*=.955+.06*noise(p*1.4);rough=.95;}
@@ -346,6 +355,11 @@ void main(){float m=floor(vMat+.5);vec3 n=normalize(vNormal);if(!gl_FrontFacing)
   vec3 water=pow(base,vec3(2.2))*.48+vec3(.008,.030,.028);lit=water*mix(.7,mix(.25,.16,deepNight),dusk)*(.75+.25*sh)+mix(vec3(.30,.43,.37),vec3(.035,.07,.10),dusk)*fres*.7;
   lit+=lightColor*sparkle*sh*.8;for(int i=0;i<2;i++){vec3 lp=normalize(uRoomLights[i]-p);float ss=pow(max(dot(n,normalize(lp+v)),0.),240.);lit+=vec3(1.,.68,.29)*ss*.65*uRoomLevel;}
  }
+ if(uDragonLight.w>0.){
+  vec3 axis=uDragonLightEnd-uDragonLight.xyz;float along=clamp(dot(p-uDragonLight.xyz,axis)/max(dot(axis,axis),.01),0.,1.);
+  vec3 delta=mix(uDragonLight.xyz,uDragonLightEnd,along)-p;float d2=dot(delta,delta);vec3 direction=delta*inversesqrt(max(d2,.01));
+  lit+=albedo*vec3(1.,.24,.025)*uDragonLight.w*(max(dot(n,direction),0.)+.16)/(1.+d2*.22/max(uDragonLightScale*uDragonLightScale,.0001));
+ }
  lit+=pow(max(base,vec3(0)),vec3(1.6))*em;
  if(m==33.){vec3 sky=pow(base,vec3(2.2));vec3 exterior=mix(sky*vec3(.075,.16,.28)+vec3(.008,.018,.030),sky*vec3(.015,.036,.075)+vec3(.003,.007,.015),deepNight);lit=mix(sky*1.28,exterior,dusk);if(uRain>.01){vec2 q=vUV*vec2(160.,54.);float cell=floor(q.x);float h=hash(vec3(cell,0.,2.));float y=fract(q.y+uTime*(.09+h*.13));float x=fract(q.x);float drop=exp(-pow((x-.5)*14.,2.)-pow((y-.5)*9.,2.));float tail=exp(-pow((x-.5)*22.,2.))*smoothstep(.10,.5,y)*(1.-smoothstep(.5,.97,y));lit=mix(lit,lit*.88+vec3(.06,.075,.085)*(drop+tail*.28),uRain);}}
  // The window softly paints the oak, rather than illuminating an outdoor void.
@@ -356,7 +370,7 @@ void main(){float m=floor(vMat+.5);vec3 n=normalize(vNormal);if(!gl_FrontFacing)
 const SHVS=`#version 300 es
 precision highp float;layout(location=0)in vec3 aPosition;layout(location=3)in float aMat;
 ${WILDLIFE_SKIN_GLSL}
-uniform mat4 uModel,uVP;void main(){mat4 skin=abs(aMat-90.)<.1?wildlifeSkin():mat4(1.);gl_Position=uVP*uModel*skin*vec4(aPosition,1.);}`;
+uniform mat4 uModel,uVP;void main(){mat4 skin=(abs(aMat-90.)<.1||abs(aMat-101.)<.1)?wildlifeSkin():mat4(1.);gl_Position=uVP*uModel*skin*vec4(aPosition,1.);}`;
 const SHFS=`#version 300 es
 precision highp float;void main(){}`;
 const FULLVS=`#version 300 es
@@ -557,7 +571,7 @@ precision highp float;layout(location=0)in vec4 aPosSize;layout(location=1)in ve
 const PARTFS=`#version 300 es
 precision highp float;in vec4 vColor;out vec4 frag;void main(){vec2 p=gl_PointCoord*2.-1.;float d=dot(p,p);if(d>1.)discard;float a=exp(-d*3.8)*(1.-smoothstep(.35,1.,d))*vColor.a;frag=vec4(vColor.rgb,a);}`;
 function initSteam(){particleProgram=program(PARTVS,PARTFS);steamVAO=gl.createVertexArray();steamBuffer=gl.createBuffer();gl.bindVertexArray(steamVAO);gl.bindBuffer(gl.ARRAY_BUFFER,steamBuffer);gl.bufferData(gl.ARRAY_BUFFER,(maxSteam+150)*8*4,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,32,0);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,4,gl.FLOAT,false,32,16);gl.bindVertexArray(null)}
-function emitSteam(big=false){if(steam.length>=maxSteam)steam.shift();let p=transform(big?[.0,1.58,-.07]:[0,1.75,1.03],trainModels[0]),f=leadInfo.f;steam.push({p,v:[rnd(-.10,.18)-f[0]*.15,rnd(.54,.78),rnd(-.10,.16)-f[2]*.15],age:0,life:rnd(2.4,4.0),size:big?.30:.17,big})}
+function emitSteam(big=false){if(steam.length>=maxSteam)steam.shift();const {p,f}=typeof hobbySteamEmitter==='function'?hobbySteamEmitter(big):{p:transform(big?[0,1.58,-.07]:[0,1.668,1.03],trainModels[0]),f:leadInfo.f};steam.push({p,v:[rnd(-.10,.18)-f[0]*.15,rnd(.54,.78),rnd(-.10,.16)-f[2]*.15],age:0,life:rnd(2.4,4.0),size:big?.30:.17,big})}
 function updateSteam(dt){steamAccumulator+=dt*(speed>0.1?6+speed*3.2:1.5);while(steamAccumulator>=1){emitSteam(whistleSteam>0);steamAccumulator--}whistleSteam=Math.max(0,whistleSteam-dt);for(let i=steam.length-1;i>=0;i--){let s=steam[i];s.age+=dt;if(s.age>s.life){steam.splice(i,1);continue}s.p=add(s.p,mul(s.v,dt));s.p[0]+=Math.sin(s.age*.9)*dt*.13;s.size+=dt*.21}}
 function drawSteam(){let total=steam.length+roomDust.length;let data=new Float32Array(total*8);steam.forEach((s,i)=>{let fade=1-s.age/s.life,light=night?.50:.91;data.set([...s.p,s.size,light,light*.97,light*.86,fade*.35],i*8)});roomDust.forEach((d,i)=>{let t=roomClock*.16+d.phase;data.set([d.p[0]+Math.sin(t)*.7,d.p[1]+Math.sin(t*.51)*.6,d.p[2]+Math.cos(t*.7)*.5,d.size,.68,.57,.37,.2*roomLampLevel],(steam.length+i)*8)});gl.useProgram(particleProgram);um(particleProgram,'uVP',VP);uv3(particleProgram,'uEye',cameraPos);uf(particleProgram,'uHeight',screenH);gl.bindVertexArray(steamVAO);gl.bindBuffer(gl.ARRAY_BUFFER,steamBuffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,data);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.drawArrays(gl.POINTS,0,total);gl.depthMask(true);gl.disable(gl.BLEND)}
 
@@ -591,7 +605,7 @@ function updateBaseUI(){if(!leadInfo)return;$('speedValue').textContent=Math.rou
 function render(){if(typeof embeddedFrameUpdate==='function')embeddedFrameUpdate();if(!building||!(ghost||gesture?.kind==='move'))releaseTemplatePreview();updateMoonlightHouse();architecturalGlassDraws.length=0;gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.viewport(0,0,shadowSize,shadowSize);gl.useProgram(shadowProgram);um(shadowProgram,'uVP',lightVP);
  if(shadowDirty){gl.bindFramebuffer(gl.FRAMEBUFFER,shadowCacheFbo);gl.clear(gl.DEPTH_BUFFER_BIT);drawHobbyStatic(shadowProgram,true);shadowDirty=false;}
  gl.bindFramebuffer(gl.READ_FRAMEBUFFER,shadowCacheFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,shadowFbo);gl.blitFramebuffer(0,0,shadowSize,shadowSize,0,0,shadowSize,shadowSize,gl.DEPTH_BUFFER_BIT,gl.NEAREST);gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFbo);drawHobbyTrains(shadowProgram);if(building&&gesture?.kind==='move')renderObject(getSelected(),shadowProgram);
- gl.bindFramebuffer(gl.FRAMEBUFFER,msaaFbo||sceneFbo);gl.viewport(0,0,screenW,screenH);let bg=lerpV([.019,.036,.037],[.014,.024,.04],night);gl.clearColor(...bg,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(mainProgram);um(mainProgram,'uVP',VP);um(mainProgram,'uLightVP',lightVP);uv3(mainProgram,'uEye',cameraPos);uv3(mainProgram,'uSun',sunDir);uv3(mainProgram,'uHead',transform([0,1.3,1.7],hobbyTrainMatrix()));uv3(mainProgram,'uForward',hobbyHasNativeTrain()?hobbyTrainInfo().f:[0,0,0]);gl.uniform3fv(uniform(mainProgram,'uLamps[0]'),new Float32Array(houseLayoutLights(hobby.room).flat()));uf(mainProgram,'uNight',night);uf(mainProgram,'uTime',clock*(reduceMotion?0:1));gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,shadowTex);gl.uniform1i(uniform(mainProgram,'uShadow'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,atlasTexture);gl.uniform1i(uniform(mainProgram,'uAtlas'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,roomAtlasTexture);gl.uniform1i(uniform(mainProgram,'uRoomAtlas'),2);gl.uniform3fv(uniform(mainProgram,'uRoomLights[0]'),new Float32Array(houseRoomLights(hobby.room).flat()));uf(mainProgram,'uRoomLevel',roomLampLevel);uf(mainProgram,'uRain',rainAmount);gl.uniform1i(uniform(mainProgram,'uMoonlightFilm'),4);uf(mainProgram,'uMoonlightReady',houseMoonlight?.bind(4,atlasTexture,2)?1:0);gl.uniform1i(uniform(mainProgram,'uMoonlightNameplate'),5);houseMoonlight?.bindNameplate(5,atlasTexture,2);drawHobbyStatic(mainProgram,false);drawHobbyTrains(mainProgram);if(hobby.room==='valley'&&!(typeof isShopMapActive==='function'&&isShopMapActive()))for(let i=0;i<signalModels.length;i++){let occupied=i===1&&leadInfo.edge===common&&leadInfo.d>tunnelStart-3&&leadInfo.d<tunnelEnd+12;draw(occupied?signalRedMesh:signalGreenMesh,signalModels[i]);}drawArchitecturalGlass();drawMoonlightHouseAir();drawHobbyParticles();
+ gl.bindFramebuffer(gl.FRAMEBUFFER,msaaFbo||sceneFbo);gl.viewport(0,0,screenW,screenH);let bg=lerpV([.019,.036,.037],[.014,.024,.04],night);gl.clearColor(...bg,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(mainProgram);um(mainProgram,'uVP',VP);if(typeof briarSetFireLight==='function')briarSetFireLight(hobby.scene,mainProgram);um(mainProgram,'uLightVP',lightVP);uv3(mainProgram,'uEye',cameraPos);uv3(mainProgram,'uSun',sunDir);uv3(mainProgram,'uHead',transform([0,1.3,1.7],hobbyTrainMatrix()));uv3(mainProgram,'uForward',hobbyHasNativeTrain()?hobbyTrainInfo().f:[0,0,0]);gl.uniform3fv(uniform(mainProgram,'uLamps[0]'),new Float32Array(houseLayoutLights(hobby.room).flat()));uf(mainProgram,'uNight',night);uf(mainProgram,'uTime',clock*(reduceMotion?0:1));gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,shadowTex);gl.uniform1i(uniform(mainProgram,'uShadow'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,atlasTexture);gl.uniform1i(uniform(mainProgram,'uAtlas'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,roomAtlasTexture);gl.uniform1i(uniform(mainProgram,'uRoomAtlas'),2);gl.uniform3fv(uniform(mainProgram,'uRoomLights[0]'),new Float32Array(houseRoomLights(hobby.room).flat()));uf(mainProgram,'uRoomLevel',roomLampLevel);uf(mainProgram,'uRain',rainAmount);gl.uniform1i(uniform(mainProgram,'uMoonlightFilm'),4);uf(mainProgram,'uMoonlightReady',houseMoonlight?.bind(4,atlasTexture,2)?1:0);gl.uniform1i(uniform(mainProgram,'uMoonlightNameplate'),5);houseMoonlight?.bindNameplate(5,atlasTexture,2);drawHobbyStatic(mainProgram,false);drawHobbyTrains(mainProgram);if(hobby.room==='valley'&&!(typeof isShopMapActive==='function'&&isShopMapActive()))for(let i=0;i<signalModels.length;i++){let occupied=i===1&&leadInfo.edge===common&&leadInfo.d>tunnelStart-3&&leadInfo.d<tunnelEnd+12;draw(occupied?signalRedMesh:signalGreenMesh,signalModels[i]);}drawArchitecturalGlass();drawMoonlightHouseAir();drawHobbyParticles();
  if(msaaFbo){gl.bindFramebuffer(gl.READ_FRAMEBUFFER,msaaFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,sceneFbo);gl.blitFramebuffer(0,0,screenW,screenH,0,0,screenW,screenH,gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT,gl.NEAREST);}gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,screenW,screenH);gl.disable(gl.DEPTH_TEST);gl.useProgram(postProgram);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);gl.uniform1i(uniform(postProgram,'uScene'),0);gl.uniform2f(uniform(postProgram,'uResolution'),screenW,screenH);uf(postProgram,'uTime',clock);uf(postProgram,'uNight',night);uf(postProgram,'uMacro',(building||viewMode==='window-left'||viewMode==='window-right'?0:lensAmount)*(viewMode==='cab'?.20:viewMode==='room'?.32:viewMode==='station'?1.1:.65));uf(postProgram,'uFocus',len(sub(cameraPos,cameraTarget)));uf(postProgram,'uNear',cameraNear);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,sceneDepth);gl.uniform1i(uniform(postProgram,'uDepth'),3);gl.bindVertexArray(null);gl.drawArrays(gl.TRIANGLES,0,3);}
 // Movie decoding is limited to a nearby, front-facing screen. Map views keep
 // the static picture, and object transforms follow edits instead of a fixed site.
@@ -1258,7 +1272,7 @@ function appendInstance(dst,src,m){
   a.push(m[0]*x+m[4]*y+m[8]*z+m[12],m[1]*x+m[5]*y+m[9]*z+m[13],m[2]*x+m[6]*y+m[10]*z+m[14],(m[0]*nx+m[4]*ny+m[8]*nz)/s,(m[1]*nx+m[5]*ny+m[9]*nz)/s,(m[2]*nx+m[6]*ny+m[10]*nz)/s,src[i+6],src[i+7],src[i+8],src[i+9],src[i+10],src[i+11]);
  }
 }
-function disposeMesh(m){if(m&&!m.disposed){m.disposed=true;if(m.skinBuffer)gl.deleteBuffer(m.skinBuffer);if(m.skinTexture)gl.deleteTexture(m.skinTexture);if(m.glass)disposeMesh(m.glass);if(m.ibo)gl.deleteBuffer(m.ibo);if(m.vao)gl.deleteVertexArray(m.vao);if(m.buf)gl.deleteBuffer(m.buf);}}
+function disposeMesh(m){if(m&&!m.disposed){m.disposed=true;if(m.skinBuffer)gl.deleteBuffer(m.skinBuffer);if(m.skinTexture&&!m.skinTextureShared)gl.deleteTexture(m.skinTexture);if(m.glass)disposeMesh(m.glass);if(m.ibo)gl.deleteBuffer(m.ibo);if(m.vao)gl.deleteVertexArray(m.vao);if(m.buf)gl.deleteBuffer(m.buf);}}
 function rebuildScenery(exclude=null){
  if(exclude&&!sceneryMesh?.glass){shadowDirty=true;return;}
  const b=new Builder();sceneryRanges.clear();stationMarkerCache=null;

@@ -1,0 +1,22 @@
+{
+  "fps": 24,
+  "duration": 20,
+  "native_sample_rate": 12,
+  "cycle_seconds": 120,
+  "description": "Overlapping authored curves on editable chest, neck, jaw, wing and tail controls; Blender constraints keep the soles planted.",
+  "ritual": {
+    "chest_lift": [[0,0],[2.0,0.015],[4.3,0],[5.5,0.10],[6.6,0.19],[7.4,0.16],[9.2,0.13],[11.3,0.065],[13.0,-0.02],[14.1,-0.035],[16.0,0.04],[17.4,0.018],[19,0],[20,0]],
+    "rib_expansion": [[0,0],[4.3,0],[5.8,0.06],[6.9,0.085],[8.4,0.065],[10.8,0.03],[13.3,0],[15.7,0.02],[18,0],[20,0]],
+    "jaw_open_radians": [[0,0],[4.7,0],[5.7,0.08],[6.75,0.36],[7.3,0.42],[8.5,0.37],[9.9,0.405],[11.2,0.36],[12.6,0.31],[13.25,0.23],[14.4,0.06],[15.2,0],[20,0]],
+    "neck_extend": [[0,0],[4.3,0],[5.8,-0.03],[6.6,-0.05],[7.45,0.08],[9.0,0.095],[11.0,0.06],[13.2,0.035],[14.6,-0.025],[16.8,0.008],[19,0],[20,0]],
+    "gaze_yaw": [[0,0],[2.5,0.025],[4.5,0.02],[6.8,0],[8.8,-0.035],[10.8,0.005],[12.8,0.035],[14.5,0.028],[17,-0.015],[20,0]],
+    "wing_brace": [[0,0],[4.6,0],[6.4,0.06],[7.8,0.045],[10.3,0.055],[13.4,0.025],[15,0.006],[18,0],[20,0]]
+  },
+  "verification": [
+    "No complete-skeleton hold during 7–13.3 seconds",
+    "Foot controls remain constant while elbows react to chest motion",
+    "Stagger neck segment responses; do not rotate the entire upper body rigidly",
+    "No action discontinuity at 20, 40 or 120 seconds",
+    "Continuous full ritual reviewed in the native renderer"
+  ]
+}

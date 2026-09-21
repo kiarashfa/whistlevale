@@ -38,6 +38,7 @@ function shopWallVisible(w,entry){
 }
 function shopRoomLights(entry,p){
  if(p!==mainProgram)return;
+ if(typeof briarSetFireLight==='function')briarSetFireLight(hobby.scene,p,entry.model);
  let lights=shopLightCache.get(entry);
  if(!lights){lights={room:new Float32Array(houseRoomLights(entry.key).map(point=>transform(point,entry.model)).flat()),layout:new Float32Array(houseLayoutLights(entry.key).map(point=>transform(point,entry.model)).flat())};shopLightCache.set(entry,lights);}
  gl.uniform3fv(uniform(p,'uRoomLights[0]'),lights.room);
@@ -46,6 +47,7 @@ function shopRoomLights(entry,p){
 }
 drawHobbyStatic=function(p,shadow){
  if(!shopMap.active)return shopBase.static(p,shadow);
+ if(typeof briarSetFireLight==='function')briarSetFireLight(null,p);
  draw(shopHouseBuilt.mesh,I,p);
  for(const entry of SHOP_HOUSE_LAYOUT.rooms)shopRoomScope(entry,()=>{
   shopRoomLights(entry,p);
@@ -66,7 +68,7 @@ drawHobbyTrains=function(p){
   if(entry.key==='valley'&&p===mainProgram)for(const model of signalModels)draw(signalGreenMesh,model,p);
  });
 };
-drawHobbyParticles=function(){if(!shopMap.active)shopBase.particles();};
+drawHobbyParticles=function(){if(typeof briarDrawFire==='function')briarDrawFire();if(!shopMap.active)shopBase.particles();};
 updateSimulation=function(dt){
  if(shopMap.active&&shopMap.revision!==houseRoomRevision){
   const selected=shopMap.selected;closeShopMap();
@@ -74,7 +76,7 @@ updateSimulation=function(dt){
   catch(error){console.error(error);toast('The updated room could not open. Please try again.');}
  }
  shopBase.simulation(dt);
- if(shopMap.active&&!paused)for(const [key,scene]of roomScenes)if(key!==hobby.room){for(const train of scene.trains)train.distance+=dt*train.speed*speed;if(scene.wildlife)safariUpdateWildlife(scene,dt);}
+ if(shopMap.active&&!paused)for(const [key,scene]of roomScenes)if(key!==hobby.room){for(const train of scene.trains)train.distance+=dt*train.speed*speed;if(scene.wildlife)safariUpdateWildlife(scene,dt);if(scene.dragon)briarUpdateDragon(scene,dt);}
 };
 updateHobbyAudio=function(dt){
  if(!shopMap.active)return shopBase.audio(dt);

@@ -40,11 +40,15 @@ function drawHobbyTrains(p){
 }
 function drawHobbyParticles(){
  if(!hobbyHasNativeTrain())return;
- if(hobby.room==='valley'){if(typeof collectionPower!=='function'||collectionPower('valley')==='steam')drawSteam();return;}
- // Reuse the steam system at the active exhibit locomotive, including room dust.
- const savedSteam=steam.map(p=>p.p),source=trainModels[0],destination=hobbyTrainMatrix();
- const origin=transform([0,1.7,1.03],source),target=transform([0,1.7,1.03],destination);
- if(hobby.scene.trains[0].type==='steam'){steam.forEach((s,i)=>{s.p=add(savedSteam[i],sub(target,origin));});drawSteam();steam.forEach((s,i)=>{s.p=savedSteam[i];});}
+ if(collectionPower(hobby.room)==='steam')drawSteam();
+}
+function hobbySteamEmitter(big){
+ const family=collectionById.get(collectionChoice(hobby.room).id)?.family;
+ const tank=family==='tank'||family==='saddle';
+ // Each puff stays in room coordinates after leaving the actual chimney.
+ // Translating an Alder Valley plume at draw time also moved its old puffs
+ // with the locomotive and inherited the wrong route's heading.
+ return {p:transform(big?(tank?[-.091,1.562,-.47]:[0,1.58,-.07]):[0,1.668,1.03],hobbyTrainMatrix()),f:hobbyTrainInfo().f};
 }
 
 function houseOrbit(room,close=false){
@@ -78,7 +82,7 @@ function activateHouseRoom(key){
  const scene=key==='valley'?null:getHouseScene(key);
  if(typeof closeQuietControls==='function')closeQuietControls();
  if(building)baseHobbyBuild(false);if(hobby.cinema)leaveCinema(false);
- hobby.room=key;hobby.scene=scene;hobby.spot=-1;
+ hobby.room=key;hobby.scene=scene;hobby.spot=-1;steam.length=0;steamAccumulator=0;whistleSteam=0;
  if(typeof conductorRoomAllowed==='function'){if(!conductorRoomAllowed()){conductorStop();if(typeof stopArrival==='function')stopArrival();}conductorPaintControl();}
  if(typeof embeddedEnter==='function')embeddedEnter(key);
  syncRoomControls();
@@ -260,8 +264,10 @@ function bindCinemaCamera(){
 }
 
 updateSimulation=function(dt){
+ // Advance the active locomotive before the shared particle simulation emits.
+ if(hobby.room!=='valley'&&hobby.scene&&!paused)for(const train of hobby.scene.trains)train.distance+=dt*train.speed*speed;
  baseHobbySimulation(dt);
- if(hobby.room!=='valley'&&hobby.scene&&!paused){for(const train of hobby.scene.trains)train.distance+=dt*train.speed*speed;if(hobby.scene.wildlife)safariUpdateWildlife(hobby.scene,dt);}
+ if(hobby.room!=='valley'&&hobby.scene&&!paused){if(hobby.scene.wildlife)safariUpdateWildlife(hobby.scene,dt);if(hobby.scene.dragon)briarUpdateDragon(hobby.scene,dt);}
 };
 
 function cinemaCamera(dt){

@@ -69,7 +69,7 @@ function houseFixture(options={}){
   const HOUSE_ROOMS=Object.fromEntries(['valley','coast','grandhall'].map(id=>[id,{name:'The '+id,number:id,target:[0,0,0]}]));
   const roomScenes=new Map(['coast','grandhall'].map(id=>[id,{trains:[],spots:[]} ]));
   let building=false,shadowDirty=false,hidden=false,viewMode='room',orbit={target:[0,0,0],yaw:0,pitch:0,distance:20},cameraTarget=[0,0,0],cameraPos=[0,0,20],lightVP=[],lensAmount=0,shopLightCache,shopHouseBuilt=true,houseRoomRevision=0;
-  let paused=false,throttle=42;const reduceMotion=true,sunDir=[1,1,1],shopBase={camera(){}},SHOP_HOUSE_LAYOUT={width:100,depth:100,mapEntry:{target:[0,0,0]}};
+  let paused=false,throttle=42,steamAccumulator=0,whistleSteam=0;const steam=[],reduceMotion=true,sunDir=[1,1,1],shopBase={camera(){}},SHOP_HOUSE_LAYOUT={width:100,depth:100,mapEntry:{target:[0,0,0]}};
   const canvas={style:{}},ShopMapUI={setLoading(){},hide(){},show(){},refresh(){}};
   const noop=()=>{};const createHobbyUI= noop,initHouseArt=noop,initWalkingFigures=noop,initHouseMap=noop,updateUI=noop,syncRoomControls=noop,renderRoomPlaces=noop,houseOrbit=noop;
   const baseHobbyStart=()=>{window.READY=true;},buildValleyLife=()=>({actors:[],population:0}),baseHobbyBuild=noop;
@@ -97,7 +97,9 @@ for(const tracking of [true,false])for(const [search,expected]of [['','valley'],
 }
 {
  const f=houseFixture({search:'?map=coast'});f.run('startHouse()');await f.settle();
+ f.run('steam.push({p:[1,2,3]});steamAccumulator=1;whistleSteam=1;');
  f.run("shopFinishEntry('coast',false)");f.flush();
+ assert.deepEqual(plain(f.run('[steam.length,steamAccumulator,whistleSteam]')),[0,0,0],'room entry clears the previous railway plume');
  assert.deepEqual(f.of('room_visit').map(event=>event.data.room),['coast'],'map close and room activation coalesce without a phantom valley visit');
  f.run('hobby.cinema=true;syncHouseAnalytics();hobby.transition=true;syncHouseAnalytics()');f.flush();
  assert.equal(f.of('cinema_start').length,0,'a transition suppresses the pending cinema snapshot');

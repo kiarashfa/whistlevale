@@ -1,0 +1,38 @@
+{
+  "blender": "5.1.1",
+  "bones": 38,
+  "drawPalettes": [
+    24,
+    24,
+    15
+  ],
+  "vertices": 15622,
+  "expandedVertices": 41604,
+  "soleVertices": 652,
+  "sourceBytes": 5145424,
+  "textureBytes": 1396094,
+  "textureSize": [
+    2048,
+    2048
+  ],
+  "authoringTextureSize": [
+    4096,
+    4096
+  ],
+  "blendSHA256": "d7468f0b4044ac9b1ed98ef2623cec69dd3834bc36ab824ec655b3e48b3c1e7f",
+  "scriptSHA256": "b17ec0fb662670b4f96f6264924c12147a9b30e73f11b09754fa5bcb4dd0ab18",
+  "bounds": [
+    [
+      -7.554698,
+      3.585054
+    ],
+    [
+      -1.469944,
+      6.795806
+    ],
+    [
+      -6.180413,
+      3.249441
+    ]
+  ]
+}
